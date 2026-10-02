@@ -1,0 +1,1663 @@
+{
+  "name": "Alexa Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.message.chat.id }}",
+        "contextWindowLength": 30
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        400,
+        208
+      ],
+      "id": "335df0db-3ade-41d1-8adb-c321f80bcebc",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "You are Alexa, an intelligent and professional project manager\n \nYour job is to help the user manage their emails, calendar events, appointments, their databases  and related information efficiently.\n \n## Your Main Responsibilities\n \nYou can:\n \n1. Read and search emails.\n2. Send emails on behalf of the user.\n3. Check the user's calendar and find existing events.\n4. Create new calendar events.\n5. Search Google for information when the user asks for information that is not available in their emails or calendar.\n6. Remember relevant information from the conversation using memory.\n7. Retrieve the required data from the user.\n8. check the accessed databases and fetch any requested data.\n9. create and update the database record according to the user request.\n \n## Available Tools\n \nYou have access to the following tools:\n \n### Gmail - Get All\nUse this tool when the user wants to:\n- Find an email.\n- Check recent emails.\n- Search for emails from a specific person.\n- Find emails containing specific words or subjects.\n- Retrieve information from previous emails.\n \n### Gmail - Send Message\nUse this tool when the user wants to:\n- Send an email.\n- Reply to an email.\n- Send a message to a specific recipient.\n \nBefore sending an email, make sure you have:\n- Recipient email address\n- Subject\n- Email content\n \nIf any required information is missing, ask the user for it.\n \nIMPORTANT:\nDo not send an email if the user only asks you to draft, write, or prepare an email.\nOnly use the Send Message tool when the user explicitly asks you to send the email.\n \nIf the user asks you to send an email but important information is missing, ask for the missing information first.\n \n### Google Calendar - Get All\nUse this tool when the user wants to:\n- Check their calendar.\n- Find an existing event.\n- Check whether they are available.\n- Find events on a specific date.\n- Find events during a specific time period.\n- Check upcoming meetings or appointments.\n \nAlways check the calendar instead of assuming whether a time is available.\n \n### Google Calendar - Create Event\nUse this tool when the user wants to:\n- Schedule a meeting.\n- Create an appointment.\n- Add an event to the calendar.\n- Schedule a reminder/event.\n \n### airtable - Create or update\nUse this tool when the user wants to:\n- create a new record.\n- edit an existing record.\n- Add a new course.\n- add a new instructor.\n- relate a certain course to an existing instructor.\n- assign a certain course to an existing instructor.\n- update the list of duties related to any instructor. \n- add a new course resourses if required.\n-create or update an assignment if required by the instructor or the user\n \nBefore creating an event, make sure you know:\n- Event title\n- Date\n- Start time\n- End time or duration\n \nIf important information is missing, ask the user.\n \nIMPORTANT:\nDo not create a calendar event unless the user clearly asks you to schedule/create/add it.\n \nIf the requested time conflicts with an existing calendar event, inform the user about the conflict before creating the new event.\n \n### Google Search - SerpAPI\nUse Google Search when:\n- The user asks for current/general information that is not available in their emails or calendar.\n- The user explicitly asks you to search Google/the web.\n- You need external information to answer the user's question.\n \nDo not use Google Search when the answer can be obtained from the user's email or calendar.\n \n### airtable  - Get data \nUse this tool when the user wants to:\n- Find any required data.\n- Check records from the workspace.\n- Search for courses, instructors or any required information from the database.\n- fetch records that required by the user.\n- don't guess any information if you can't find it in the database.\n- always return to the database first before you answer.\n \n \n## Email Rules\n \nWhen the user asks about emails:\n \n1. Understand what email they are looking for.\n2. Use Gmail Get All to find the relevant email.\n3. Summarize the relevant information clearly.\n4. Do not invent email content.\n5. If no matching email is found, tell the user clearly.\n \nWhen writing emails:\n- Be professional.\n- Be clear and concise.\n- Use an appropriate subject.\n- Match the tone requested by the user.\n- Never invent important facts.\n \n## Calendar Rules\n \nWhen the user asks about their schedule:\n \n1. Use Google Calendar Get All.\n2. Check the relevant date/time.\n3. Report existing events accurately.\n4. Never claim that the user is available without checking the calendar.\n \nWhen scheduling:\n1. Collect all required information.\n2. Check the calendar for conflicts.\n3. If there is no conflict, create the event.\n4. Confirm to the user that the event was created.\n \n## Date and Time Rules\n \nAlways pay attention to:\n- Date\n- Day of the week\n- Start time\n- End time\n- Duration\n- Time zone\n \nIf the user says something ambiguous such as:\n\"Schedule a meeting tomorrow afternoon\"\n \nAsk for the exact time before creating the event.\n \nIf the user says:\n\"Schedule a meeting tomorrow at 3 PM\"\n \nUse the current conversation date to determine the correct date.\n \nNever guess an ambiguous date or time.\n \n## Memory Rules\n \nUse conversation memory to remember relevant information already provided by the user.\n \nFor example:\n- Preferred meeting duration\n- Frequently used email recipients\n- Context of an ongoing task\n- Information provided earlier in the conversation\n \nDo not ask the user for information that they have already provided in the current conversation or available memory.\n \n## Confirmation Rules\n \nFor actions that change the user's data or communicate externally:\n \n### Sending an Email\nIf the user explicitly says:\n\"Send this email to John\"\n \nYou may send it after confirming that the required information is complete.\n \nIf the user says:\n\"Write an email to John\"\n \nDraft the email only. Do not send it.\n \n### Creating a Calendar Event\nIf the user explicitly says:\n\"Schedule a meeting with John tomorrow at 3 PM\"\n \nCheck the calendar and create the event if there is no conflict.\n \nIf the user only says:\n\"I want to meet John tomorrow\"\n \nAsk for the required time/details before creating the event.\n \n## Handling Multiple Tasks\n \nIf the user asks for multiple actions in one message, handle them one by one.\n \nFor example:\n \n\"Check my calendar tomorrow and email John if I'm free.\"\n \nYou should:\n1. Check the calendar.\n2. Determine availability.\n3. If the condition is satisfied, prepare/send the email according to the user's request.\n4. Report the result clearly.\n \n## Response Style\n \n- Be friendly, professional, and concise.\n- Answer directly.\n- Do not provide unnecessary explanations.\n- Use short bullet points when listing multiple items.\n- Clearly distinguish between actions you completed and information you found.\n- Never claim that an action was completed unless the corresponding tool successfully completed it.\n \n## Safety and Accuracy\n \n- Never invent emails, calendar events, dates, times, recipients, or search results.\n- Never assume an event exists without checking the calendar.\n- Never assume an email was sent without successfully using the Gmail Send Message tool.\n- Never assume an event was created without successfully using the Calendar Create Event tool.\n- If a tool fails, clearly tell the user that the action could not be completed.\n- Ask for clarification whenever the user's request is ambiguous.\n \n## Identity\n \nYour name is Alexa.\n \nAlways communicate naturally as Alexa."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        256,
+        16
+      ],
+      "id": "296b02c5-7c87-4cd9-94d5-591c40d000bf",
+      "name": "Alexa"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 5,
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        -48,
+        432
+      ],
+      "id": "6a300ec8-8cb1-4822-b54b-08f0bc666a21",
+      "name": "Check mails"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', ``, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "emailType": "text",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        128,
+        432
+      ],
+      "id": "3f8f99aa-7d0f-487e-bae8-ac6151b8910d",
+      "name": "Send mails"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "your-email@gmail.com",
+          "mode": "list",
+          "cachedResultName": "your-email@gmail.com"
+        },
+        "start": "={{ $fromAI('Start', ``, 'string') }}",
+        "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+        "additionalFields": {
+          "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        448,
+        432
+      ],
+      "id": "5157e4fe-7ba7-4a2d-99aa-745999bac6a3",
+      "name": "Create events"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "your-email@gmail.com",
+          "mode": "list",
+          "cachedResultName": "your-email@gmail.com"
+        },
+        "limit": 5,
+        "timeMin": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('After', ``, 'string') }}",
+        "timeMax": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Before', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        288,
+        432
+      ],
+      "id": "967f6c3f-d230-422d-82fe-3092d2f1b8f5",
+      "name": "Check events"
+    },
+    {
+      "parameters": {
+        "additionalFields": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-serpapi.serpApiTool",
+      "typeVersion": 1,
+      "position": [
+        576,
+        432
+      ],
+      "id": "47c1f64e-987e-40e6-bf05-e34028393cda",
+      "name": "Google search in SerpApi"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        208
+      ],
+      "id": "4958dbb5-cf7f-47bc-bd2f-600142c38068",
+      "name": "Google Gemini Chat Model"
+    },
+    {
+      "parameters": {
+        "content": "**Mails & events**",
+        "height": 208,
+        "width": 832
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -96,
+        384
+      ],
+      "typeVersion": 1,
+      "id": "96274776-3bfa-4250-9772-899ae73ee991",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "**Get records**",
+        "height": 208,
+        "width": 832,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        784,
+        384
+      ],
+      "typeVersion": 1,
+      "id": "cd8f1d83-5c98-4c51-9ed7-6424e64f5bc9",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "**Create or update**",
+        "height": 208,
+        "width": 832,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -960,
+        384
+      ],
+      "typeVersion": 1,
+      "id": "43a0c513-9c47-4a6d-8768-1b310b5a377b",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 144,
+        "width": 480,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        112,
+        176
+      ],
+      "typeVersion": 1,
+      "id": "ec395cbf-cf31-46d0-af4c-b07eeeb085f2",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "value": "appFpkPIzRPYmGuXo",
+          "mode": "list",
+          "cachedResultName": "AMIT Data Science Training",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl4DtGiiZ721hh4p",
+          "mode": "list",
+          "cachedResultName": "Instructors",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo/tbl4DtGiiZ721hh4p"
+        },
+        "id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Record_ID', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.2,
+      "position": [
+        1056,
+        432
+      ],
+      "id": "a5e04aa0-a81a-468c-87b8-ce5973162167",
+      "name": "Get (Instructor)"
+    },
+    {
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "value": "appFpkPIzRPYmGuXo",
+          "mode": "list",
+          "cachedResultName": "AMIT Data Science Training",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblVSc2TOLbf0eJh1",
+          "mode": "list",
+          "cachedResultName": "Courses",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo/tblVSc2TOLbf0eJh1"
+        },
+        "id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Record_ID', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        432
+      ],
+      "id": "ea259a9c-bf91-4d82-b45d-2f87b08a17d1",
+      "name": "Get (Course)"
+    },
+    {
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "value": "appFpkPIzRPYmGuXo",
+          "mode": "list",
+          "cachedResultName": "AMIT Data Science Training",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblyTF5hoWZLe1084",
+          "mode": "list",
+          "cachedResultName": "Resources",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo/tblyTF5hoWZLe1084"
+        },
+        "id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Record_ID', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.2,
+      "position": [
+        1248,
+        432
+      ],
+      "id": "61be6e4f-d94a-4ff0-bc43-896ccfdea877",
+      "name": "Get (resources)"
+    },
+    {
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "value": "appFpkPIzRPYmGuXo",
+          "mode": "list",
+          "cachedResultName": "AMIT Data Science Training",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblxQwezEpKBFL0ph",
+          "mode": "list",
+          "cachedResultName": "Course-Instructor-Resource Links",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo/tblxQwezEpKBFL0ph"
+        },
+        "id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Record_ID', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.2,
+      "position": [
+        1456,
+        416
+      ],
+      "id": "a830d312-b1f7-4c66-b38f-82eb5f10e4c3",
+      "name": "Get (Course_instructor link"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "appFpkPIzRPYmGuXo",
+          "mode": "list",
+          "cachedResultName": "AMIT Data Science Training",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl4DtGiiZ721hh4p",
+          "mode": "list",
+          "cachedResultName": "Instructors",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo/tbl4DtGiiZ721hh4p"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Name__using_to_match_', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "Name"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Areas of Expertise",
+              "displayName": "Areas of Expertise",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "options": [
+                {
+                  "name": "Statistics",
+                  "value": "Statistics"
+                },
+                {
+                  "name": "Machine Learning",
+                  "value": "Machine Learning"
+                },
+                {
+                  "name": "Data Visualization",
+                  "value": "Data Visualization"
+                },
+                {
+                  "name": "Python",
+                  "value": "Python"
+                },
+                {
+                  "name": "R",
+                  "value": "R"
+                },
+                {
+                  "name": "Deep Learning",
+                  "value": "Deep Learning"
+                },
+                {
+                  "name": "Data Science",
+                  "value": "Data Science"
+                },
+                {
+                  "name": "Software Engineering",
+                  "value": "Software Engineering"
+                },
+                {
+                  "name": "Agile Methodologies",
+                  "value": "Agile Methodologies"
+                },
+                {
+                  "name": "Cybersecurity",
+                  "value": "Cybersecurity"
+                },
+                {
+                  "name": "Network Security",
+                  "value": "Network Security"
+                },
+                {
+                  "name": "Artificial Intelligence",
+                  "value": "Artificial Intelligence"
+                },
+                {
+                  "name": "Robotics",
+                  "value": "Robotics"
+                },
+                {
+                  "name": "Database Systems",
+                  "value": "Database Systems"
+                },
+                {
+                  "name": "Big Data",
+                  "value": "Big Data"
+                },
+                {
+                  "name": "Cloud Computing",
+                  "value": "Cloud Computing"
+                },
+                {
+                  "name": "Distributed Systems",
+                  "value": "Distributed Systems"
+                },
+                {
+                  "name": "Human-Computer Interaction",
+                  "value": "Human-Computer Interaction"
+                },
+                {
+                  "name": "UX Design",
+                  "value": "UX Design"
+                },
+                {
+                  "name": "Computer Vision",
+                  "value": "Computer Vision"
+                },
+                {
+                  "name": "Programming Languages",
+                  "value": "Programming Languages"
+                },
+                {
+                  "name": "Compilers",
+                  "value": "Compilers"
+                },
+                {
+                  "name": "Natural Language Processing",
+                  "value": "Natural Language Processing"
+                },
+                {
+                  "name": "AI Ethics",
+                  "value": "AI Ethics"
+                },
+                {
+                  "name": "Mobile Development",
+                  "value": "Mobile Development"
+                },
+                {
+                  "name": "Web Technologies",
+                  "value": "Web Technologies"
+                },
+                {
+                  "name": "Algorithms",
+                  "value": "Algorithms"
+                },
+                {
+                  "name": "Theoretical Computer Science",
+                  "value": "Theoretical Computer Science"
+                },
+                {
+                  "name": "Game Development",
+                  "value": "Game Development"
+                },
+                {
+                  "name": "Graphics Programming",
+                  "value": "Graphics Programming"
+                },
+                {
+                  "name": "IoT",
+                  "value": "IoT"
+                },
+                {
+                  "name": "Embedded Systems",
+                  "value": "Embedded Systems"
+                },
+                {
+                  "name": "Quantum Computing",
+                  "value": "Quantum Computing"
+                },
+                {
+                  "name": "Cryptography",
+                  "value": "Cryptography"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Bio",
+              "displayName": "Bio",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Course-Instructor-Resource Links",
+              "displayName": "Course-Instructor-Resource Links",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Course Assignment Fit (AI)",
+              "displayName": "Course Assignment Fit (AI)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.2,
+      "position": [
+        -688,
+        432
+      ],
+      "id": "d6ad9735-a2d8-4a59-a7fb-fcc62950bd03",
+      "name": "Create or update (instructors)"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "appFpkPIzRPYmGuXo",
+          "mode": "list",
+          "cachedResultName": "AMIT Data Science Training",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblVSc2TOLbf0eJh1",
+          "mode": "list",
+          "cachedResultName": "Courses",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo/tblVSc2TOLbf0eJh1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Course Name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Course_Name__using_to_match_', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "Course Name"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Course Name",
+              "displayName": "Course Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Topics",
+              "displayName": "Topics",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "options": [
+                {
+                  "name": "Statistics",
+                  "value": "Statistics"
+                },
+                {
+                  "name": "Machine Learning",
+                  "value": "Machine Learning"
+                },
+                {
+                  "name": "Data Visualization",
+                  "value": "Data Visualization"
+                },
+                {
+                  "name": "Python",
+                  "value": "Python"
+                },
+                {
+                  "name": "R",
+                  "value": "R"
+                },
+                {
+                  "name": "Deep Learning",
+                  "value": "Deep Learning"
+                },
+                {
+                  "name": "Programming",
+                  "value": "Programming"
+                },
+                {
+                  "name": "Basics",
+                  "value": "Basics"
+                },
+                {
+                  "name": "Excel",
+                  "value": "Excel"
+                },
+                {
+                  "name": "Data Analysis",
+                  "value": "Data Analysis"
+                },
+                {
+                  "name": "Spreadsheets",
+                  "value": "Spreadsheets"
+                },
+                {
+                  "name": "Web Development",
+                  "value": "Web Development"
+                },
+                {
+                  "name": "HTML",
+                  "value": "HTML"
+                },
+                {
+                  "name": "CSS",
+                  "value": "CSS"
+                },
+                {
+                  "name": "JavaScript",
+                  "value": "JavaScript"
+                },
+                {
+                  "name": "Functions",
+                  "value": "Functions"
+                },
+                {
+                  "name": "Modules",
+                  "value": "Modules"
+                },
+                {
+                  "name": "Algorithms",
+                  "value": "Algorithms"
+                },
+                {
+                  "name": "AI",
+                  "value": "AI"
+                },
+                {
+                  "name": "Project Management",
+                  "value": "Project Management"
+                },
+                {
+                  "name": "Planning",
+                  "value": "Planning"
+                },
+                {
+                  "name": "Scheduling",
+                  "value": "Scheduling"
+                },
+                {
+                  "name": "Digital Marketing",
+                  "value": "Digital Marketing"
+                },
+                {
+                  "name": "SEO",
+                  "value": "SEO"
+                },
+                {
+                  "name": "Social Media",
+                  "value": "Social Media"
+                },
+                {
+                  "name": "DOM",
+                  "value": "DOM"
+                },
+                {
+                  "name": "Data Science",
+                  "value": "Data Science"
+                },
+                {
+                  "name": "Visualization",
+                  "value": "Visualization"
+                },
+                {
+                  "name": "VBA",
+                  "value": "VBA"
+                },
+                {
+                  "name": "Macros",
+                  "value": "Macros"
+                },
+                {
+                  "name": "React",
+                  "value": "React"
+                },
+                {
+                  "name": "Agile",
+                  "value": "Agile"
+                },
+                {
+                  "name": "Scrum",
+                  "value": "Scrum"
+                },
+                {
+                  "name": "Kanban",
+                  "value": "Kanban"
+                },
+                {
+                  "name": "Projects",
+                  "value": "Projects"
+                },
+                {
+                  "name": "Dashboards",
+                  "value": "Dashboards"
+                },
+                {
+                  "name": "TensorFlow",
+                  "value": "TensorFlow"
+                },
+                {
+                  "name": "Neural Networks",
+                  "value": "Neural Networks"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Skill Level",
+              "displayName": "Skill Level",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Beginner",
+                  "value": "Beginner"
+                },
+                {
+                  "name": "Intermediate",
+                  "value": "Intermediate"
+                },
+                {
+                  "name": "Advanced",
+                  "value": "Advanced"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Prerequisites",
+              "displayName": "Prerequisites",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Course-Instructor-Resource Links",
+              "displayName": "Course-Instructor-Resource Links",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Suggested Next Course (AI)",
+              "displayName": "Suggested Next Course (AI)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "From field: Prerequisites",
+              "displayName": "From field: Prerequisites",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.2,
+      "position": [
+        -880,
+        432
+      ],
+      "id": "804e6ee3-8674-471c-82cd-2435d83a7cac",
+      "name": "Create or update (Courses)"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "appFpkPIzRPYmGuXo",
+          "mode": "list",
+          "cachedResultName": "AMIT Data Science Training",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblyTF5hoWZLe1084",
+          "mode": "list",
+          "cachedResultName": "Resources",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo/tblyTF5hoWZLe1084"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Resource Name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Resource_Name__using_to_match_', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "Resource Name"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Resource Name",
+              "displayName": "Resource Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Resource Type",
+              "displayName": "Resource Type",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Slides",
+                  "value": "Slides"
+                },
+                {
+                  "name": "Video",
+                  "value": "Video"
+                },
+                {
+                  "name": "Notebook",
+                  "value": "Notebook"
+                },
+                {
+                  "name": "Reading",
+                  "value": "Reading"
+                },
+                {
+                  "name": "Assignment",
+                  "value": "Assignment"
+                },
+                {
+                  "name": "Dataset",
+                  "value": "Dataset"
+                },
+                {
+                  "name": "Link",
+                  "value": "Link"
+                },
+                {
+                  "name": "Other",
+                  "value": "Other"
+                },
+                {
+                  "name": "Online Course",
+                  "value": "Online Course"
+                },
+                {
+                  "name": "Research Paper",
+                  "value": "Research Paper"
+                },
+                {
+                  "name": "Library",
+                  "value": "Library"
+                },
+                {
+                  "name": "Guidelines",
+                  "value": "Guidelines"
+                },
+                {
+                  "name": "Dataset Repository",
+                  "value": "Dataset Repository"
+                },
+                {
+                  "name": "Documentation",
+                  "value": "Documentation"
+                },
+                {
+                  "name": "Newsletter",
+                  "value": "Newsletter"
+                },
+                {
+                  "name": "Tutorial",
+                  "value": "Tutorial"
+                },
+                {
+                  "name": "Podcast",
+                  "value": "Podcast"
+                },
+                {
+                  "name": "Book",
+                  "value": "Book"
+                },
+                {
+                  "name": "Tool",
+                  "value": "Tool"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "File/Link",
+              "displayName": "File/Link",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Course-Instructor-Resource Links",
+              "displayName": "Course-Instructor-Resource Links",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Suggested Usage (AI)",
+              "displayName": "Suggested Usage (AI)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.2,
+      "position": [
+        -512,
+        432
+      ],
+      "id": "41d701be-6867-485f-ab63-4422e684c77a",
+      "name": "Create or update (Resources)"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "appFpkPIzRPYmGuXo",
+          "mode": "list",
+          "cachedResultName": "AMIT Data Science Training",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblxQwezEpKBFL0ph",
+          "mode": "list",
+          "cachedResultName": "Course-Instructor-Resource Links",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo/tblxQwezEpKBFL0ph"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('ID__using_to_match_', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "ID"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Course",
+              "displayName": "Course",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Instructor",
+              "displayName": "Instructor",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Resource",
+              "displayName": "Resource",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Teaching Term/Session",
+              "displayName": "Teaching Term/Session",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Role (Instructor/TA/etc)",
+              "displayName": "Role (Instructor/TA/etc)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Lead Instructor",
+                  "value": "Lead Instructor"
+                },
+                {
+                  "name": "Teaching Assistant",
+                  "value": "Teaching Assistant"
+                },
+                {
+                  "name": "Guest Speaker",
+                  "value": "Guest Speaker"
+                },
+                {
+                  "name": "Content Reviewer",
+                  "value": "Content Reviewer"
+                },
+                {
+                  "name": "Resource Provider",
+                  "value": "Resource Provider"
+                },
+                {
+                  "name": "Instructor",
+                  "value": "Instructor"
+                },
+                {
+                  "name": "TA",
+                  "value": "TA"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.2,
+      "position": [
+        -320,
+        432
+      ],
+      "id": "68a3dfd1-2c91-4618-8563-bbdbcd6cdec4",
+      "name": "Create or update (Courses_instructor link)"
+    },
+    {
+      "parameters": {
+        "content": "**Delete**",
+        "height": 208,
+        "width": 832,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -80,
+        656
+      ],
+      "typeVersion": 1,
+      "id": "c9314162-4272-4570-9382-66f2cc45efef",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "operation": "deleteRecord",
+        "base": {
+          "__rl": true,
+          "value": "appFpkPIzRPYmGuXo",
+          "mode": "list",
+          "cachedResultName": "AMIT Data Science Training",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblVSc2TOLbf0eJh1",
+          "mode": "list",
+          "cachedResultName": "Courses",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo/tblVSc2TOLbf0eJh1"
+        },
+        "id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Record_ID', ``, 'string') }}"
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        704
+      ],
+      "id": "e9d06079-6395-4e6b-98ce-37b9f523afe8",
+      "name": "Delete a record in (Cources)"
+    },
+    {
+      "parameters": {
+        "operation": "deleteRecord",
+        "base": {
+          "__rl": true,
+          "value": "appFpkPIzRPYmGuXo",
+          "mode": "list",
+          "cachedResultName": "AMIT Data Science Training",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl4DtGiiZ721hh4p",
+          "mode": "list",
+          "cachedResultName": "Instructors",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo/tbl4DtGiiZ721hh4p"
+        },
+        "id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Record_ID', ``, 'string') }}"
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.2,
+      "position": [
+        192,
+        704
+      ],
+      "id": "25960281-432f-486b-9199-7a59240fe895",
+      "name": "Delete a record in (Instructors)"
+    },
+    {
+      "parameters": {
+        "operation": "deleteRecord",
+        "base": {
+          "__rl": true,
+          "value": "appFpkPIzRPYmGuXo",
+          "mode": "list",
+          "cachedResultName": "AMIT Data Science Training",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblyTF5hoWZLe1084",
+          "mode": "list",
+          "cachedResultName": "Resources",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo/tblyTF5hoWZLe1084"
+        },
+        "id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Record_ID', ``, 'string') }}"
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.2,
+      "position": [
+        384,
+        704
+      ],
+      "id": "4f76fa8d-e568-4190-8615-c15526c82a6d",
+      "name": "Delete a record in (Resources)"
+    },
+    {
+      "parameters": {
+        "operation": "deleteRecord",
+        "base": {
+          "__rl": true,
+          "value": "appFpkPIzRPYmGuXo",
+          "mode": "list",
+          "cachedResultName": "AMIT Data Science Training",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblxQwezEpKBFL0ph",
+          "mode": "list",
+          "cachedResultName": "Course-Instructor-Resource Links",
+          "cachedResultUrl": "https://airtable.com/appFpkPIzRPYmGuXo/tblxQwezEpKBFL0ph"
+        },
+        "id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Record_ID', ``, 'string') }}"
+      },
+      "type": "n8n-nodes-base.airtableTool",
+      "typeVersion": 2.2,
+      "position": [
+        576,
+        704
+      ],
+      "id": "b6a156c8-84e7-4178-9a33-ab40800c2415",
+      "name": "Delete a record in (Course_instructor Link)"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "979d01f7-d8de-4c04-8916-b94466ab0adb",
+      "name": "Telegram Trigger"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        816,
+        16
+      ],
+      "id": "dbb93b50-733a-4a3a-95d2-258b52245f18",
+      "name": "Send a text message"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c82fc6b3-c5e9-402c-a44e-3a07b5511452",
+              "name": "output",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        624,
+        16
+      ],
+      "id": "7dfbc1d6-d0f1-4b23-8af5-f594835572c9",
+      "name": "Edit Fields"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Alexa",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alexa": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check mails": {
+      "ai_tool": [
+        [
+          {
+            "node": "Alexa",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send mails": {
+      "ai_tool": [
+        [
+          {
+            "node": "Alexa",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create events": {
+      "ai_tool": [
+        [
+          {
+            "node": "Alexa",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check events": {
+      "ai_tool": [
+        [
+          {
+            "node": "Alexa",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google search in SerpApi": {
+      "ai_tool": [
+        [
+          {
+            "node": "Alexa",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Alexa",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get (Instructor)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Alexa",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get (Course)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Alexa",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get (resources)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Alexa",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get (Course_instructor link": {
+      "ai_tool": [
+        [
+          {
+            "node": "Alexa",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create or update (instructors)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Alexa",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create or update (Courses)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Alexa",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create or update (Resources)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Alexa",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create or update (Courses_instructor link)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Alexa",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete a record in (Cources)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Alexa",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete a record in (Instructors)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Alexa",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete a record in (Resources)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Alexa",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete a record in (Course_instructor Link)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Alexa",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Alexa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "621ff697-d62c-4486-86aa-915a46aa21c4",
+  "meta": {},
+  "nodeGroups": [],
+  "id": "9IrvqjaUNNChgDAR",
+  "tags": []
+}
