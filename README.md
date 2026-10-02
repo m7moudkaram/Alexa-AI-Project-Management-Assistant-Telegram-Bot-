@@ -1,5 +1,6 @@
 # Alexa — AI Project Management Assistant (Telegram Bot)
 
+![Alexa-AI-Project-Management-Assistant-Telegram-Bot-](photo.png)
 An n8n-based AI agent that manages email, calendar, and a full Airtable database through Telegram. Built as part of the **Digital Egypt Pioneers Initiative (DEPI)**, with Alaa EL-Dewer.
 
 ## Description
